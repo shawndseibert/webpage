@@ -24,18 +24,15 @@
             gap: 30px;
             align-items: start;
         }
-        
-        /* --- NEW: Logo Styling --- */
         .logo-container {
-            grid-column: 1 / -1; /* Span both columns */
+            grid-column: 1 / -1;
             text-align: center;
             padding: 10px 0;
         }
         .logo-container img {
-            max-height: 70px; /* Adjust this value to fit your logo's height */
+            max-height: 70px;
             width: auto;
         }
-
         h1 {
             color: #ffffff;
             text-align: center;
@@ -138,5 +135,5 @@
             body { padding: 10px; }
             .configurator-wrapper, .preview-wrapper { padding: 20px; }
             h1 { font-size: 1.8rem; }
-            .logo-container img { max-height: 50px; } /* Slightly smaller logo on mobile */
+            .logo-container img { max-height: 50px; }
         }
