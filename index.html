@@ -4,7 +4,146 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Interior Door Configurator</title>
-    <link rel="stylesheet" href="style.css">
+    <style>
+        :root {
+            --bg-primary: #1e1e1e;
+            --bg-secondary: #2d2d2d;
+            --text-primary: #e0e0e0;
+            --text-secondary: #b0b0b0;
+            --accent-primary: #007bff;
+            --accent-danger: #c82333;
+            --border-color: #444;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            padding: 20px;
+            transition: background-color 0.3s;
+        }
+        .container {
+            max-width: 900px;
+            margin: auto;
+            display: grid;
+            grid-template-columns: 1fr 320px;
+            gap: 30px;
+            align-items: start;
+        }
+        .logo-container {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 10px 0;
+        }
+        .logo-container img {
+            max-height: 70px;
+            width: auto;
+        }
+        h1 {
+            color: #ffffff;
+            text-align: center;
+            grid-column: 1 / -1;
+            margin-top: 0;
+            margin-bottom: 1rem;
+        }
+        .configurator-wrapper, .preview-wrapper {
+            background-color: var(--bg-secondary);
+            padding: 30px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+        }
+        .option-group { margin-bottom: 20px; }
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-secondary);
+        }
+        select {
+            width: 100%;
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            background-color: #3a3a3a;
+            color: var(--text-primary);
+            font-size: 1rem;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23cccccc%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.4-5.4-13z%22%2F%3E%3C%2Fsvg%3E');
+            background-repeat: no-repeat;
+            background-position: right 12px top 50%;
+            background-size: .65em auto;
+            transition: border-color 0.2s;
+        }
+        select:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+        }
+        select:disabled {
+            background-color: #252525;
+            opacity: 0.5;
+        }
+        .preview-wrapper #door-image {
+            width: 100%;
+            height: auto;
+            border-radius: 8px;
+            background-color: #3a3a3a;
+            border: 1px solid var(--border-color);
+            min-height: 300px;
+            transition: opacity 0.3s ease-in-out;
+        }
+        .preview-wrapper h3 {
+             border-bottom: 1px solid var(--border-color);
+             padding-bottom: 10px;
+        }
+        .result-box {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: #192a3d;
+            border: 1px solid var(--accent-primary);
+            border-radius: 8px;
+            display: none;
+        }
+        .result-box h3 { margin-top: 0; color: #fff; }
+        .result-box p {
+            margin: 4px 0;
+            color: var(--text-secondary);
+        }
+        .result-box p:first-of-type {
+            color: var(--text-primary);
+            margin-bottom: 12px;
+        }
+        .result-box .item-number {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: var(--accent-primary);
+            font-family: monospace;
+            margin-top: 8px;
+        }
+        #reset-button {
+            padding: 12px 20px;
+            border: none;
+            background-color: var(--accent-danger);
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 1rem;
+            font-weight: 600;
+            margin-top: 10px;
+            transition: background-color 0.2s;
+        }
+        #reset-button:hover { background-color: #a51d2a; }
+        @media (max-width: 800px) {
+            .container { grid-template-columns: 1fr; }
+            body { padding: 10px; }
+            .configurator-wrapper, .preview-wrapper { padding: 20px; }
+            h1 { font-size: 1.8rem; }
+            .logo-container img { max-height: 50px; }
+        }
+    </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 </head>
 <body>
@@ -45,10 +184,11 @@
             const resetButton = document.getElementById('reset-button');
 
             let csvData = [];
-            const filterColumns = ['Door Style', 'Product Category', 'Size', 'Handing', 'Jamb', 'Casing', 'Hinges'];
+            // --- UPDATED: New column order ---
+            const filterColumns = ['Paneling', 'Door Style', 'Product Category', 'Size', 'Handing', 'Jamb', 'Casing', 'Hinges'];
 
-            // --- 1. Load CSV Data ---
-            Papa.parse('doors.csv', {
+            // --- UPDATED: New file name ---
+            Papa.parse('doors_final_updated.csv', {
                 download: true,
                 header: true,
                 skipEmptyLines: true,
@@ -59,9 +199,7 @@
                 }
             });
             
-            // --- 2. Initial Setup ---
             function initialize() {
-                // Create dropdowns
                 optionsContainer.innerHTML = '';
                 filterColumns.forEach((header, index) => {
                     const group = document.createElement('div');
@@ -77,19 +215,15 @@
                     optionsContainer.appendChild(group);
                 });
                 
-                // Add event listeners
                 optionsContainer.addEventListener('change', handleOptionChange);
                 resetButton.addEventListener('click', resetAll);
                 
-                // Start the process
                 resetAll();
             }
 
-            // --- 3. Full Reset Logic ---
             function resetAll() {
                 resultBox.style.display = 'none';
                 doorImage.src = 'https://via.placeholder.com/300x400.png?text=Select+Door';
-                // Populate the first dropdown and disable the rest
                 updateDropdown(0, csvData);
                 for (let i = 1; i < filterColumns.length; i++) {
                     const select = document.getElementById(`select-${i}`);
@@ -101,16 +235,13 @@
                 }
             }
 
-            // --- 4. Core Change Handler (NEW LOGIC) ---
             function handleOptionChange(event) {
                 const changedLevel = parseInt(event.target.dataset.level);
-                resultBox.style.display = 'none'; // Always hide result on change
+                resultBox.style.display = 'none';
 
-                // Loop from the *next* level downwards
                 for (let i = changedLevel + 1; i < filterColumns.length; i++) {
                     const selectionsSoFar = getSelections(i - 1);
                     
-                    // If a preceding selection is missing, we can't populate this dropdown.
                     if (Object.keys(selectionsSoFar).length !== i) {
                         const select = document.getElementById(`select-${i}`);
                         select.innerHTML = '';
@@ -125,14 +256,12 @@
                     updateDropdown(i, filteredData);
                 }
                 
-                // After updates, check if a full configuration is present
                 const finalSelections = getSelections();
                 if (Object.keys(finalSelections).length === filterColumns.length) {
                     displayResult(finalSelections);
                 }
             }
 
-            // --- 5. Dropdown Population Utility (NEW LOGIC) ---
             function updateDropdown(level, data) {
                 const select = document.getElementById(`select-${level}`);
                 const header = select.dataset.header;
@@ -153,17 +282,15 @@
                     select.appendChild(option);
                 });
                 
-                // If the old value is still a valid option, re-select it
                 if (uniqueOptions.includes(oldValue)) {
                     select.value = oldValue;
                 } else {
-                    select.selectedIndex = 0; // Otherwise, reset to the default prompt
+                    select.selectedIndex = 0;
                 }
 
                 select.disabled = false;
             }
 
-            // --- 6. Helper to get current selections ---
             function getSelections(maxLevel = filterColumns.length - 1) {
                 const selections = {};
                 for (let i = 0; i <= maxLevel; i++) {
@@ -171,13 +298,12 @@
                     if (select.value && !select.options[select.selectedIndex].disabled) {
                         selections[select.dataset.header] = select.value;
                     } else {
-                        return {}; // Return empty if any selection is not valid
+                        return {};
                     }
                 }
                 return selections;
             }
 
-            // --- 7. Display Final Result ---
             function displayResult(selections) {
                 const foundRow = csvData.find(row => {
                     return Object.keys(selections).every(key => row[key] === selections[key]);
