@@ -183,10 +183,23 @@
 
             let csvData = [];
             
+            // --- UPDATED: New logical column order ---
             const filterColumns = [
-                'Program', 'Material', 'Core_Type', 'Style', 'Configuration', 'Finish_Texture',
-                'Glass_Info', 'Size_Width_in', 'Size_Height_in', 'Handing', 'Jamb_Type',
-                'Jamb_Casing', 'Hinge_Finish', 'Special_Features', 'Bore_Status'
+                'Program',
+                'Material',
+                'Core_Type',
+                'Style',
+                'Configuration',
+                'Finish_Texture',
+                'Glass_Info',
+                'Size_Width_in',
+                'Size_Height_in',
+                'Bore_Status',      // Moved Before Handing
+                'Handing',
+                'Jamb_Type',
+                'Jamb_Casing',
+                'Hinge_Finish',
+                'Special_Features'
             ];
 
             Papa.parse('doors_final_updated.csv', {
@@ -225,7 +238,7 @@
             function resetAll() {
                 resultBox.style.display = 'none';
                 doorImage.src = 'https://via.placeholder.com/300x400.png?text=Select+Door';
-                updateDropdown(0, csvData, true); // Force reset
+                updateDropdown(0, csvData, true);
                 for (let i = 1; i < filterColumns.length; i++) {
                     const select = document.getElementById(`select-${i}`);
                     select.innerHTML = '';
@@ -235,34 +248,27 @@
                     select.disabled = true;
                 }
             }
-
-            // --- REWRITTEN LOGIC ---
+            
             function handleOptionChange(event) {
                 const changedLevel = parseInt(event.target.dataset.level);
                 resultBox.style.display = 'none';
 
-                let currentSelections = getSelections(changedLevel);
-                let filteredData = csvData.filter(row => {
-                    return Object.keys(currentSelections).every(key => row[key] === currentSelections[key]);
-                });
-
-                // Update all subsequent dropdowns
+                let selections = getSelections(changedLevel);
+                
                 for (let i = changedLevel + 1; i < filterColumns.length; i++) {
-                    updateDropdown(i, filteredData, true); // Force subsequent dropdowns to reset
-                    
-                    // After updating, we need to re-filter the data if a single-option
-                    // dropdown was automatically selected. This ensures the next dropdown
-                    // in the chain gets the correctly filtered data.
-                    const nextSelection = getSelections(i);
-                    filteredData = csvData.filter(row => {
-                        return Object.keys(nextSelection).every(key => row[key] === nextSelection[key]);
+                    const filteredData = csvData.filter(row => {
+                        return Object.keys(selections).every(key => row[key] === selections[key]);
                     });
+                    
+                    updateDropdown(i, filteredData, false);
+                    
+                    selections = getSelections(i);
                 }
                 
                 checkAndDisplayResult();
             }
             
-            function updateDropdown(level, data, forceReset = false) {
+            function updateDropdown(level, data, forceReset) {
                 const select = document.getElementById(`select-${level}`);
                 const header = select.dataset.header;
                 const oldValue = select.value;
@@ -290,7 +296,6 @@
                     select.disabled = true;
                 } else {
                     select.disabled = false;
-                    // Keep old value only if it's still valid and we are not forcing a reset
                     if (uniqueOptions.includes(oldValue) && !forceReset) {
                         select.value = oldValue;
                     } else {
@@ -312,28 +317,19 @@
 
             function checkAndDisplayResult() {
                 const selections = getSelections();
+                const activeDropdowns = document.querySelectorAll('#options-container select:not(:disabled)');
                 
-                let filteredData = csvData.filter(row => {
-                    return Object.keys(selections).every(key => row[key] === selections[key]);
-                });
+                if (Object.keys(selections).length === activeDropdowns.length) {
+                    const foundRow = csvData.find(row => {
+                        return Object.keys(selections).every(key => row[key] === selections[key]);
+                    });
 
-                // We need to also filter out rows that have options in dropdowns that ARE NOT disabled yet
-                // For example, if "Size" is enabled but not yet selected, we don't have a final match.
-                let finalMatch = null;
-                if (filteredData.length > 0) {
-                    const activeDropdowns = document.querySelectorAll('#options-container select:not(:disabled)');
-                    if (Object.keys(selections).length === activeDropdowns.length) {
-                        if(filteredData.length === 1) {
-                            finalMatch = filteredData[0];
-                        }
+                    if (foundRow) {
+                        proStockResult.textContent = foundRow["Lowe's_Pro_Stock_Item_Number"] || 'N/A';
+                        currentStockResult.textContent = foundRow["Current_Stock_Item_Number"] || 'N/A';
+                        itemDescResult.textContent = foundRow["Original_Description"] || 'N/A';
+                        resultBox.style.display = 'block';
                     }
-                }
-
-                if (finalMatch) {
-                    proStockResult.textContent = finalMatch["Lowe's_Pro_Stock_Item_Number"] || 'N/A';
-                    currentStockResult.textContent = finalMatch["Current_Stock_Item_Number"] || 'N/A';
-                    itemDescResult.textContent = finalMatch["Original_Description"] || 'N/A';
-                    resultBox.style.display = 'block';
                 }
             }
         });
