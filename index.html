@@ -183,23 +183,10 @@
 
             let csvData = [];
             
-            // --- UPDATED: New logical column order ---
             const filterColumns = [
-                'Program',
-                'Material',
-                'Core_Type',
-                'Style',
-                'Configuration',
-                'Finish_Texture',
-                'Glass_Info',
-                'Size_Width_in',
-                'Size_Height_in',
-                'Bore_Status',      // Moved Before Handing
-                'Handing',
-                'Jamb_Type',
-                'Jamb_Casing',
-                'Hinge_Finish',
-                'Special_Features'
+                'Program', 'Material', 'Core_Type', 'Style', 'Configuration', 'Finish_Texture',
+                'Glass_Info', 'Size_Width_in', 'Size_Height_in', 'Bore_Status', 'Handing', 'Jamb_Type',
+                'Jamb_Casing', 'Hinge_Finish', 'Special_Features'
             ];
 
             Papa.parse('doors_final_updated.csv', {
@@ -319,7 +306,7 @@
                 const selections = getSelections();
                 const activeDropdowns = document.querySelectorAll('#options-container select:not(:disabled)');
                 
-                if (Object.keys(selections).length === activeDropdowns.length) {
+                if (Object.keys(selections).length > 0 && Object.keys(selections).length === activeDropdowns.length) {
                     const foundRow = csvData.find(row => {
                         return Object.keys(selections).every(key => row[key] === selections[key]);
                     });
