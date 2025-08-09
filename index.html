@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Door Configurator</title>
     
-    <!-- The <style> block has been replaced with this link to your new CSS file -->
     <link rel="stylesheet" href="style.css">
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -13,27 +12,47 @@
 <body>
 
     <div class="container">
-        <div class="logo-container">
-            <img src="your-logo.png" alt="Your Company Logo">
+        <div class="header-controls">
+            <div class="logo-container">
+                <img src="your-logo.png" alt="Your Company Logo">
+            </div>
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <div class="theme-switch-wrapper">
+                    <label class="theme-switch">
+                        <input type="checkbox" id="theme-slider">
+                        <span class="slider">
+                            <span class="knob"></span>
+                        </span>
+                    </label>
+                </div>
+            </div>
         </div>
         
         <h1>Door Configurator</h1>
 
         <div class="configurator-wrapper">
+            <div class="configurator-header">
+                <h3>Options</h3>
+                <button id="randomize-button" class="action-button">Surprise Me!</button>
+            </div>
             <div id="options-container"></div>
             <button id="reset-button">Reset</button>
         </div>
         <div class="preview-wrapper">
             <h3>Preview</h3>
+            <!-- Image tag is hidden via CSS, but kept for future use -->
             <img id="door-image" src="https://via.placeholder.com/300x400.png?text=Select+Door" alt="Door preview">
             <div id="result" class="result-box">
                 <h3>Your Configuration:</h3>
                 <p id="item-desc-result"></p>
-                <p class="item-number">Pro Stock #: <span id="pro-stock-result"></span></p>
-                <p class="item-number">Current Stock #: <span id="current-stock-result"></span></p>
+                <p class="item-number" id="pro-stock-clickable">Pro Stock #: <span id="pro-stock-result"></span></p>
+                <p class="item-number" id="current-stock-clickable">Current Stock #: <span id="current-stock-result"></span></p>
+                <button id="share-button" class="action-button" style="margin-top: 15px; width: 100%;">Copy Shareable Link</button>
             </div>
         </div>
     </div>
+    
+    <div id="copy-notification">Copied to clipboard!</div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
@@ -44,6 +63,12 @@
             const itemDescResult = document.getElementById('item-desc-result');
             const doorImage = document.getElementById('door-image');
             const resetButton = document.getElementById('reset-button');
+            const themeSlider = document.getElementById('theme-slider');
+            const randomizeButton = document.getElementById('randomize-button');
+            const shareButton = document.getElementById('share-button');
+            const copyNotification = document.getElementById('copy-notification');
+            const proStockClickable = document.getElementById('pro-stock-clickable');
+            const currentStockClickable = document.getElementById('current-stock-clickable');
 
             let csvData = [];
             
@@ -52,6 +77,22 @@
                 'Glass_Info', 'Size_Width_in', 'Size_Height_in', 'Bore_Status', 'Handing', 'Jamb_Type',
                 'Jamb_Casing', 'Hinge_Finish', 'Special_Features'
             ];
+
+            themeSlider.addEventListener('change', () => {
+                if (themeSlider.checked) {
+                    document.body.classList.add('light-mode');
+                    localStorage.setItem('theme', 'light-mode');
+                } else {
+                    document.body.classList.remove('light-mode');
+                    localStorage.setItem('theme', 'dark-mode');
+                }
+            });
+
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'light-mode') {
+                document.body.classList.add('light-mode');
+                themeSlider.checked = true;
+            }
 
             Papa.parse('doors_final_updated.csv', {
                 download: true,
@@ -69,6 +110,7 @@
                 filterColumns.forEach((header, index) => {
                     const group = document.createElement('div');
                     group.className = 'option-group';
+                    if (index > 0) group.classList.add('hidden');
                     const label = document.createElement('label');
                     label.textContent = header.replace(/_/g, ' '); 
                     const select = document.createElement('select');
@@ -82,53 +124,63 @@
                 
                 optionsContainer.addEventListener('change', handleOptionChange);
                 resetButton.addEventListener('click', resetAll);
+                randomizeButton.addEventListener('click', selectRandomConfiguration);
+                shareButton.addEventListener('click', copyShareLink);
+                proStockClickable.addEventListener('click', () => copyToClipboard(proStockResult.textContent, "Pro Stock #"));
+                currentStockClickable.addEventListener('click', () => copyToClipboard(currentStockResult.textContent, "Current Stock #"));
                 
-                resetAll();
+                loadConfigFromURL();
             }
 
             function resetAll() {
-                resultBox.style.display = 'none';
-                doorImage.src = 'https://via.placeholder.com/300x400.png?text=Select+Door';
-                updateDropdown(0, csvData, true);
-                for (let i = 1; i < filterColumns.length; i++) {
-                    const select = document.getElementById(`select-${i}`);
-                    select.innerHTML = '';
-                    const defaultOption = document.createElement('option');
-                    defaultOption.textContent = `Select a ${filterColumns[i-1].replace(/_/g, ' ')} first`;
-                    select.appendChild(defaultOption);
-                    select.disabled = true;
-                }
-                updateValidationStyles();
+                resultBox.classList.remove('visible');
+                // The image is hidden by CSS, but we reset its source for when it's re-enabled
+                if (doorImage) doorImage.src = 'https://via.placeholder.com/300x400.png?text=Select+Door';
+                
+                document.querySelectorAll('.option-group:not(.hidden)').forEach((group, index) => {
+                    if (index > 0) {
+                       group.classList.add('hidden');
+                    }
+                });
+
+                setTimeout(() => {
+                    document.querySelectorAll('#options-container select').forEach(s => {
+                        s.classList.remove('is-valid', 'needs-attention');
+                    });
+                    updateDropdown(0, csvData, true);
+                    for (let i = 1; i < filterColumns.length; i++) {
+                        const select = document.getElementById(`select-${i}`);
+                        select.innerHTML = '';
+                        const defaultOption = document.createElement('option');
+                        defaultOption.textContent = `Select a ${filterColumns[i-1].replace(/_/g, ' ')} first`;
+                        select.appendChild(defaultOption);
+                        select.disabled = true;
+                    }
+                }, 400); 
             }
             
             function handleOptionChange(event) {
-                const changedLevel = parseInt(event.target.dataset.level);
-                resultBox.style.display = 'none';
-
+                const changedSelect = event.target;
+                const changedLevel = parseInt(changedSelect.dataset.level);
+                resultBox.classList.remove('visible');
+                updateValidationStyles();
                 let selections = getSelections(changedLevel);
-                
                 for (let i = changedLevel + 1; i < filterColumns.length; i++) {
-                    const filteredData = csvData.filter(row => {
-                        return Object.keys(selections).every(key => row[key] === selections[key]);
-                    });
-                    
+                    const filteredData = csvData.filter(row => Object.keys(selections).every(key => row[key] === selections[key]));
                     updateDropdown(i, filteredData, false);
-                    
                     selections = getSelections(i);
                 }
-                
-                updateValidationStyles();
                 checkAndDisplayResult();
             }
             
             function updateDropdown(level, data, forceReset) {
                 const select = document.getElementById(`select-${level}`);
+                const group = select.parentElement;
                 const header = select.dataset.header;
                 const oldValue = select.value;
+                const wasPreviouslySelected = oldValue && select.selectedIndex > 0;
 
-                const uniqueOptions = [...new Set(data.map(row => row[header]).filter(val => val && val.trim() !== ''))].sort((a,b) => {
-                    return isNaN(a) || isNaN(b) ? a.localeCompare(b, undefined, {numeric: true}) : a - b;
-                });
+                const uniqueOptions = [...new Set(data.map(row => row[header]).filter(val => val && val.trim() !== ''))].sort((a,b) => isNaN(a) || isNaN(b) ? a.localeCompare(b, undefined, {numeric: true}) : a - b);
                 
                 select.innerHTML = '';
                 const defaultOption = document.createElement('option');
@@ -143,16 +195,24 @@
                     select.appendChild(option);
                 });
                 
+                select.classList.remove('is-valid', 'needs-attention');
+                
                 if (uniqueOptions.length === 0) {
                     select.selectedIndex = 0;
                     defaultOption.textContent = "Not Applicable";
                     select.disabled = true;
+                    group.classList.add('hidden');
                 } else {
                     select.disabled = false;
+                    group.classList.remove('hidden');
                     if (uniqueOptions.includes(oldValue) && !forceReset) {
                         select.value = oldValue;
+                        select.classList.add('is-valid');
                     } else {
                         select.selectedIndex = 0;
+                        if (wasPreviouslySelected) {
+                            select.classList.add('needs-attention');
+                        }
                     }
                 }
             }
@@ -171,12 +231,12 @@
             function updateValidationStyles() {
                 for (let i = 0; i < filterColumns.length; i++) {
                     const select = document.getElementById(`select-${i}`);
-                    const isValid = select.disabled || (select.value && !select.options[select.selectedIndex].disabled);
-                    
-                    if (isValid) {
+                    const hasSelection = select.value && !select.options[select.selectedIndex].disabled;
+                    if (hasSelection) {
                         select.classList.remove('needs-attention');
+                        select.classList.add('is-valid');
                     } else {
-                        select.classList.add('needs-attention');
+                        select.classList.remove('is-valid');
                     }
                 }
             }
@@ -186,17 +246,87 @@
                 const activeDropdowns = document.querySelectorAll('#options-container select:not(:disabled)');
                 
                 if (Object.keys(selections).length > 0 && Object.keys(selections).length === activeDropdowns.length) {
-                    const foundRow = csvData.find(row => {
-                        return Object.keys(selections).every(key => row[key] === selections[key]);
-                    });
-
+                    const foundRow = csvData.find(row => Object.keys(selections).every(key => row[key] === selections[key]));
                     if (foundRow) {
                         proStockResult.textContent = foundRow["Lowe's_Pro_Stock_Item_Number"] || 'N/A';
                         currentStockResult.textContent = foundRow["Current_Stock_Item_Number"] || 'N/A';
                         itemDescResult.textContent = foundRow["Original_Description"] || 'N/A';
-                        resultBox.style.display = 'block';
+                        resultBox.classList.add('visible');
                     }
                 }
+            }
+
+            function selectRandomConfiguration() {
+                resetAll();
+                setTimeout(() => {
+                    const validDoors = csvData.filter(row => row.Program !== 'Component');
+                    if (validDoors.length === 0) return;
+                    const randomRow = validDoors[Math.floor(Math.random() * validDoors.length)];
+                    let filteredData = csvData;
+                    for (let i = 0; i < filterColumns.length; i++) {
+                        const header = filterColumns[i];
+                        const valueToSet = randomRow[header];
+                        updateDropdown(i, filteredData, true);
+                        const select = document.getElementById(`select-${i}`);
+                        if (valueToSet && !select.disabled) {
+                            select.value = valueToSet;
+                        }
+                        const selections = getSelections(i);
+                        filteredData = csvData.filter(row => Object.keys(selections).every(key => row[key] === selections[key]));
+                    }
+                    updateValidationStyles();
+                    checkAndDisplayResult();
+                }, 450);
+            }
+
+            function copyShareLink() {
+                const selections = getSelections();
+                if (Object.keys(selections).length === 0) return;
+                const params = new URLSearchParams();
+                for (const key in selections) {
+                    params.append(key, selections[key]);
+                }
+                const shareUrl = `${window.location.origin}${window.location.pathname}?${params.toString()}`;
+                copyToClipboard(shareUrl, "Shareable link");
+            }
+
+            function copyToClipboard(text, type) {
+                if (!text || text === 'N/A') return;
+                const textArea = document.createElement("textarea");
+                textArea.value = text;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                copyNotification.textContent = `${type} copied to clipboard!`;
+                copyNotification.classList.add('show');
+                setTimeout(() => {
+                    copyNotification.classList.remove('show');
+                }, 2000);
+            }
+
+            function loadConfigFromURL() {
+                const params = new URLSearchParams(window.location.search);
+                if (params.toString() === '') {
+                    resetAll();
+                    return;
+                }
+                let filteredData = csvData;
+                for (let i = 0; i < filterColumns.length; i++) {
+                    const header = filterColumns[i];
+                    const value = params.get(header);
+                    updateDropdown(i, filteredData, false);
+                    const select = document.getElementById(`select-${i}`);
+                    if (value && Array.from(select.options).some(opt => opt.value === value)) {
+                        select.value = value;
+                        const selections = getSelections(i);
+                        filteredData = csvData.filter(row => Object.keys(selections).every(key => row[key] === selections[key]));
+                    } else {
+                        break;
+                    }
+                }
+                updateValidationStyles();
+                checkAndDisplayResult();
             }
         });
     </script>
