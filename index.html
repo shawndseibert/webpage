@@ -8,8 +8,10 @@
     <link rel="stylesheet" href="style.css">
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
 </head>
 <body>
+    <canvas id="confetti-canvas"></canvas>
 
     <div class="container">
         <div class="header-controls">
@@ -32,6 +34,9 @@
             <div class="configurator-header">
                 <h3>Options</h3>
                 <button id="randomize-button" class="action-button">Surprise Me!</button>
+            </div>
+            <div class="progress-bar-container">
+                <div class="progress-bar" id="progress-bar"></div>
             </div>
             <div id="options-container"></div>
             <button id="reset-button">Reset</button>
@@ -66,6 +71,7 @@
             const copyNotification = document.getElementById('copy-notification');
             const proStockClickable = document.getElementById('pro-stock-clickable');
             const currentStockClickable = document.getElementById('current-stock-clickable');
+            const progressBar = document.getElementById('progress-bar');
 
             let csvData = [];
             
@@ -109,7 +115,12 @@
                     group.className = 'option-group';
                     if (index > 0) group.classList.add('hidden');
                     const label = document.createElement('label');
-                    label.textContent = header.replace(/_/g, ' '); 
+                    label.innerHTML = `
+                        <svg class="checkmark" viewBox="0 0 24 24">
+                            <path d="M4.5 12.75l6 6 9-13.5"/>
+                        </svg>
+                        <span>${header.replace(/_/g, ' ')}</span>
+                    `;
                     const select = document.createElement('select');
                     select.id = `select-${index}`;
                     select.dataset.level = index;
@@ -143,6 +154,7 @@
                     document.querySelectorAll('#options-container select').forEach(s => {
                         s.classList.remove('is-valid', 'needs-attention');
                     });
+                    document.querySelectorAll('.option-group').forEach(g => g.classList.remove('is-valid'));
                     updateDropdown(0, csvData, true);
                     for (let i = 1; i < filterColumns.length; i++) {
                         const select = document.getElementById(`select-${i}`);
@@ -152,6 +164,7 @@
                         select.appendChild(defaultOption);
                         select.disabled = true;
                     }
+                    updateProgressBar();
                 }, 400); 
             }
             
@@ -159,19 +172,22 @@
                 const changedSelect = event.target;
                 const changedLevel = parseInt(changedSelect.dataset.level);
                 resultBox.classList.remove('visible');
-                updateValidationStyles();
+                
                 let selections = getSelections(changedLevel);
                 for (let i = changedLevel + 1; i < filterColumns.length; i++) {
                     const filteredData = csvData.filter(row => Object.keys(selections).every(key => row[key] === selections[key]));
                     updateDropdown(i, filteredData, false);
                     selections = getSelections(i);
                 }
+                
+                updateValidationStyles();
                 checkAndDisplayResult();
             }
             
             function updateDropdown(level, data, forceReset) {
                 const select = document.getElementById(`select-${level}`);
-                const group = select.parentElement;
+                // --- FIX: Correctly reference the parent .option-group ---
+                const group = select.closest('.option-group'); 
                 const header = select.dataset.header;
                 const oldValue = select.value;
                 const wasPreviouslySelected = oldValue && select.selectedIndex > 0;
@@ -192,6 +208,7 @@
                 });
                 
                 select.classList.remove('is-valid', 'needs-attention');
+                group.classList.remove('is-valid');
                 
                 if (uniqueOptions.length === 0) {
                     select.selectedIndex = 0;
@@ -204,6 +221,7 @@
                     if (uniqueOptions.includes(oldValue) && !forceReset) {
                         select.value = oldValue;
                         select.classList.add('is-valid');
+                        group.classList.add('is-valid');
                     } else {
                         select.selectedIndex = 0;
                         if (wasPreviouslySelected) {
@@ -227,14 +245,19 @@
             function updateValidationStyles() {
                 for (let i = 0; i < filterColumns.length; i++) {
                     const select = document.getElementById(`select-${i}`);
+                    // --- FIX: Correctly reference the parent .option-group ---
+                    const group = select.closest('.option-group');
                     const hasSelection = select.value && !select.options[select.selectedIndex].disabled;
                     if (hasSelection) {
                         select.classList.remove('needs-attention');
                         select.classList.add('is-valid');
+                        group.classList.add('is-valid');
                     } else {
                         select.classList.remove('is-valid');
+                        group.classList.remove('is-valid');
                     }
                 }
+                updateProgressBar();
             }
 
             function checkAndDisplayResult() {
@@ -248,8 +271,29 @@
                         currentStockResult.textContent = foundRow["Current_Stock_Item_Number"] || 'N/A';
                         itemDescResult.textContent = foundRow["Original_Description"] || 'N/A';
                         resultBox.classList.add('visible');
+                        fireConfetti();
                     }
                 }
+            }
+
+            function updateProgressBar() {
+                const activeDropdowns = document.querySelectorAll('#options-container select:not(:disabled)');
+                const selectedActiveDropdowns = document.querySelectorAll('#options-container select.is-valid:not(:disabled)');
+                const progress = activeDropdowns.length > 0 ? (selectedActiveDropdowns.length / activeDropdowns.length) * 100 : 0;
+                progressBar.style.width = `${progress}%`;
+            }
+
+            function fireConfetti() {
+                const canvas = document.getElementById('confetti-canvas');
+                const myConfetti = confetti.create(canvas, {
+                    resize: true,
+                    useWorker: true
+                });
+                myConfetti({
+                    particleCount: 150,
+                    spread: 80,
+                    origin: { y: 0.6 }
+                });
             }
 
             function selectRandomConfiguration() {
