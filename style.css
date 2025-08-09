@@ -76,7 +76,6 @@ h1 {
     transition: background-color 0.3s, border-color 0.3s;
 }
 
-/* NEW: Header for the configurator options box */
 .configurator-header {
     display: flex;
     justify-content: space-between;
@@ -214,14 +213,9 @@ select.is-valid {
 }
 
 /* --- Preview and Result Box Styling --- */
+/* UPDATED: Hiding the image */
 .preview-wrapper #door-image {
-    width: 100%;
-    height: auto;
-    border-radius: 8px;
-    background-color: #3a3a3a;
-    border: 1px solid var(--border-color);
-    min-height: 300px;
-    transition: opacity 0.3s ease-in-out, background-color 0.3s, border-color 0.3s;
+    display: none;
 }
 
 body.light-mode .preview-wrapper #door-image {

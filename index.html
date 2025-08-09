@@ -16,15 +16,13 @@
             <div class="logo-container">
                 <img src="your-logo.png" alt="Your Company Logo">
             </div>
-            <div style="display: flex; align-items: center; gap: 15px;">
-                <div class="theme-switch-wrapper">
-                    <label class="theme-switch">
-                        <input type="checkbox" id="theme-slider">
-                        <span class="slider">
-                            <span class="knob"></span>
-                        </span>
-                    </label>
-                </div>
+            <div class="theme-switch-wrapper">
+                <label class="theme-switch">
+                    <input type="checkbox" id="theme-slider">
+                    <span class="slider">
+                        <span class="knob"></span>
+                    </span>
+                </label>
             </div>
         </div>
         
@@ -40,7 +38,6 @@
         </div>
         <div class="preview-wrapper">
             <h3>Preview</h3>
-            <!-- Image tag is hidden via CSS, but kept for future use -->
             <img id="door-image" src="https://via.placeholder.com/300x400.png?text=Select+Door" alt="Door preview">
             <div id="result" class="result-box">
                 <h3>Your Configuration:</h3>
@@ -134,7 +131,6 @@
 
             function resetAll() {
                 resultBox.classList.remove('visible');
-                // The image is hidden by CSS, but we reset its source for when it's re-enabled
                 if (doorImage) doorImage.src = 'https://via.placeholder.com/300x400.png?text=Select+Door';
                 
                 document.querySelectorAll('.option-group:not(.hidden)').forEach((group, index) => {
