@@ -8,9 +8,11 @@
     <link rel="stylesheet" href="style.css">
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <!-- NEW: Lightweight confetti library -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
 </head>
 <body>
+    <!-- NEW: Canvas for confetti -->
     <canvas id="confetti-canvas"></canvas>
 
     <div class="container">
@@ -35,6 +37,7 @@
                 <h3>Options</h3>
                 <button id="randomize-button" class="action-button">Surprise Me!</button>
             </div>
+            <!-- NEW: Progress Bar element -->
             <div class="progress-bar-container">
                 <div class="progress-bar" id="progress-bar"></div>
             </div>
@@ -43,7 +46,7 @@
         </div>
         <div class="preview-wrapper">
             <h3>Preview</h3>
-            <img id="door-image" src="https://via.placeholder.com/300x400.png?text=Select+Door" alt="Door preview">
+            <!-- <img id="door-image" src="https://via.placeholder.com/300x400.png?text=Select+Door" alt="Door preview"> -->
             <div id="result" class="result-box">
                 <h3>Your Configuration:</h3>
                 <p id="item-desc-result"></p>
@@ -179,15 +182,14 @@
                     updateDropdown(i, filteredData, false);
                     selections = getSelections(i);
                 }
-                
+
                 updateValidationStyles();
                 checkAndDisplayResult();
             }
             
             function updateDropdown(level, data, forceReset) {
                 const select = document.getElementById(`select-${level}`);
-                // --- FIX: Correctly reference the parent .option-group ---
-                const group = select.closest('.option-group'); 
+                const group = select.closest('.option-group');
                 const header = select.dataset.header;
                 const oldValue = select.value;
                 const wasPreviouslySelected = oldValue && select.selectedIndex > 0;
@@ -245,7 +247,6 @@
             function updateValidationStyles() {
                 for (let i = 0; i < filterColumns.length; i++) {
                     const select = document.getElementById(`select-${i}`);
-                    // --- FIX: Correctly reference the parent .option-group ---
                     const group = select.closest('.option-group');
                     const hasSelection = select.value && !select.options[select.selectedIndex].disabled;
                     if (hasSelection) {
