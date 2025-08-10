@@ -3,16 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- NEW: Tells browsers to respect our custom light/dark themes -->
+    <meta name="color-scheme" content="light dark">
     <title>Door Configurator</title>
     
     <link rel="stylesheet" href="style.css">
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-    <!-- NEW: Lightweight confetti library -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
 </head>
 <body>
-    <!-- NEW: Canvas for confetti -->
     <canvas id="confetti-canvas"></canvas>
 
     <div class="container">
@@ -37,7 +37,6 @@
                 <h3>Options</h3>
                 <button id="randomize-button" class="action-button">Surprise Me!</button>
             </div>
-            <!-- NEW: Progress Bar element -->
             <div class="progress-bar-container">
                 <div class="progress-bar" id="progress-bar"></div>
             </div>
