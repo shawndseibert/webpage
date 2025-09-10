@@ -10,10 +10,8 @@
     <link rel="stylesheet" href="style.css">
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
 </head>
 <body>
-    <canvas id="confetti-canvas"></canvas>
 
     <div class="container">
         <div class="header-controls">
@@ -78,8 +76,8 @@
             let csvData = [];
             
             const filterColumns = [
-                'Program', 'Material', 'Core_Type', 'Style', 'Configuration', 'Finish_Texture',
-                'Glass_Info', 'Size_Width_in', 'Size_Height_in', 'Bore_Status', 'Handing', 'Jamb_Type',
+                'Program', 'Glass', 'Material', 'Core_Type', 'Style', 'Configuration', 'Finish_Texture',
+                'Size_Width_in', 'Size_Height_in', 'Bore_Status', 'Handing', 'Jamb_Type',
                 'Jamb_Casing', 'Hinge_Finish', 'Special_Features'
             ];
 
@@ -99,7 +97,7 @@
                 themeSlider.checked = true;
             }
 
-            Papa.parse('doors_final_updated.csv', {
+            Papa.parse('doors_final_with_descriptions.csv', {
                 download: true,
                 header: true,
                 skipEmptyLines: true,
@@ -193,24 +191,33 @@
                 const oldValue = select.value;
                 const wasPreviouslySelected = oldValue && select.selectedIndex > 0;
 
-                const uniqueOptions = [...new Set(data.map(row => row[header]).filter(val => val && val.trim() !== ''))].sort((a,b) => isNaN(a) || isNaN(b) ? a.localeCompare(b, undefined, {numeric: true}) : a - b);
-                
+
+                let uniqueOptions = [...new Set(data.map(row => row[header]).filter(val => val && val.trim() !== ''))];
+                // For the Glass dropdown, add 'No Glass' if any row has empty or missing glass value
+                if (header === 'Glass') {
+                    const hasNoGlass = data.some(row => !row['Glass'] || row['Glass'].trim() === '');
+                    if (hasNoGlass && !uniqueOptions.includes('No Glass')) {
+                        uniqueOptions.push('No Glass');
+                    }
+                }
+                uniqueOptions = uniqueOptions.sort((a,b) => isNaN(a) || isNaN(b) ? a.localeCompare(b, undefined, {numeric: true}) : a - b);
+
                 select.innerHTML = '';
                 const defaultOption = document.createElement('option');
                 defaultOption.textContent = `Select a ${header.replace(/_/g, ' ')}`;
                 defaultOption.disabled = true;
                 select.appendChild(defaultOption);
-                
+
                 uniqueOptions.forEach(val => {
                     const option = document.createElement('option');
                     option.value = val;
                     option.textContent = val;
                     select.appendChild(option);
                 });
-                
+
                 select.classList.remove('is-valid', 'needs-attention');
                 group.classList.remove('is-valid');
-                
+
                 if (uniqueOptions.length === 0) {
                     select.selectedIndex = 0;
                     defaultOption.textContent = "Not Applicable";
@@ -219,7 +226,16 @@
                 } else {
                     select.disabled = false;
                     group.classList.remove('hidden');
-                    if (uniqueOptions.includes(oldValue) && !forceReset) {
+                    // For Glass dropdown, auto-select 'No Glass' if it's the only valid option for this data
+                    if (header === 'Glass' && uniqueOptions.includes('No Glass') && uniqueOptions.length === 1) {
+                        select.value = 'No Glass';
+                        select.classList.add('is-valid');
+                        group.classList.add('is-valid');
+                    } else if (uniqueOptions.length === 1) {
+                        select.selectedIndex = 1;
+                        select.classList.add('is-valid');
+                        group.classList.add('is-valid');
+                    } else if (uniqueOptions.includes(oldValue) && !forceReset) {
                         select.value = oldValue;
                         select.classList.add('is-valid');
                         group.classList.add('is-valid');
@@ -237,7 +253,12 @@
                 for (let i = 0; i <= maxLevel; i++) {
                     const select = document.getElementById(`select-${i}`);
                     if (!select.disabled && select.value && !select.options[select.selectedIndex].disabled) {
-                        selections[select.dataset.header] = select.value;
+                        // For Glass dropdown, treat 'No Glass' as empty string for filtering
+                        if (select.dataset.header === 'Glass' && select.value === 'No Glass') {
+                            selections[select.dataset.header] = '';
+                        } else {
+                            selections[select.dataset.header] = select.value;
+                        }
                     }
                 }
                 return selections;
@@ -248,14 +269,18 @@
                     const select = document.getElementById(`select-${i}`);
                     const group = select.closest('.option-group');
                     const hasSelection = select.value && !select.options[select.selectedIndex].disabled;
+                    // Remove all state classes first
+                    select.classList.remove('is-valid', 'needs-attention');
+                    group.classList.remove('is-valid');
                     if (hasSelection) {
-                        select.classList.remove('needs-attention');
+                        // Green for valid
                         select.classList.add('is-valid');
                         group.classList.add('is-valid');
-                    } else {
-                        select.classList.remove('is-valid');
-                        group.classList.remove('is-valid');
+                    } else if (select.selectedIndex > 0) {
+                        // Red for needs attention (was previously selected but now invalid)
+                        select.classList.add('needs-attention');
                     }
+                    // White is default, no class needed
                 }
                 updateProgressBar();
             }
@@ -263,15 +288,24 @@
             function checkAndDisplayResult() {
                 const selections = getSelections();
                 const activeDropdowns = document.querySelectorAll('#options-container select:not(:disabled)');
-                
                 if (Object.keys(selections).length > 0 && Object.keys(selections).length === activeDropdowns.length) {
                     const foundRow = csvData.find(row => Object.keys(selections).every(key => row[key] === selections[key]));
                     if (foundRow) {
+                        let style = foundRow["Style"] ? foundRow["Style"] : "Door";
+                        let title = style;
+                        if (foundRow["Size_Width_in"] && foundRow["Size_Height_in"]) {
+                            title = `${style} ${foundRow["Size_Width_in"]}in x ${foundRow["Size_Height_in"]}in`;
+                        }
+                        itemDescResult.innerHTML = `<strong>${title}</strong><br>${foundRow["Original_Description"] || 'N/A'}`;
                         proStockResult.textContent = foundRow["Lowe's_Pro_Stock_Item_Number"] || 'N/A';
-                        currentStockResult.textContent = foundRow["Current_Stock_Item_Number"] || 'N/A';
-                        itemDescResult.textContent = foundRow["Original_Description"] || 'N/A';
+                        let currentStock = foundRow["Current_Stock_Item_Number"];
+                        if (currentStock && typeof currentStock === 'string' && currentStock.endsWith('.0')) {
+                            currentStock = currentStock.slice(0, -2);
+                        } else if (typeof currentStock === 'number') {
+                            currentStock = currentStock % 1 === 0 ? currentStock.toString().replace(/\.0$/, '') : currentStock.toString();
+                        }
+                        currentStockResult.textContent = currentStock || 'N/A';
                         resultBox.classList.add('visible');
-                        fireConfetti();
                     }
                 }
             }
@@ -283,19 +317,6 @@
                 progressBar.style.width = `${progress}%`;
             }
 
-            function fireConfetti() {
-                const canvas = document.getElementById('confetti-canvas');
-                const myConfetti = confetti.create(canvas, {
-                    resize: true,
-                    useWorker: true
-                });
-                myConfetti({
-                    particleCount: 150,
-                    spread: 80,
-                    origin: { y: 0.6 }
-                });
-            }
-
             function selectRandomConfiguration() {
                 resetAll();
                 setTimeout(() => {
@@ -305,14 +326,23 @@
                     let filteredData = csvData;
                     for (let i = 0; i < filterColumns.length; i++) {
                         const header = filterColumns[i];
-                        const valueToSet = randomRow[header];
+                        let valueToSet = randomRow[header];
+                        // For Glass dropdown, treat empty string as 'No Glass'
+                        if (header === 'Glass' && (!valueToSet || valueToSet.trim() === '')) {
+                            valueToSet = 'No Glass';
+                        }
                         updateDropdown(i, filteredData, true);
                         const select = document.getElementById(`select-${i}`);
                         if (valueToSet && !select.disabled) {
                             select.value = valueToSet;
                         }
                         const selections = getSelections(i);
-                        filteredData = csvData.filter(row => Object.keys(selections).every(key => row[key] === selections[key]));
+                        filteredData = csvData.filter(row => Object.keys(selections).every(key => {
+                            if (key === 'Glass' && selections[key] === 'No Glass') {
+                                return !row['Glass'] || row['Glass'].trim() === '';
+                            }
+                            return row[key] === selections[key];
+                        }));
                     }
                     updateValidationStyles();
                     checkAndDisplayResult();
@@ -368,6 +398,14 @@
                 updateValidationStyles();
                 checkAndDisplayResult();
             }
+
+            window.addEventListener('resize', () => {
+                const canvas = document.getElementById('confetti-canvas');
+                if (canvas) {
+                    canvas.width = window.innerWidth;
+                    canvas.height = window.innerHeight;
+                }
+            });
         });
     </script>
 </body>
