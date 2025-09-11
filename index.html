@@ -53,6 +53,9 @@
                 <p class="item-number" id="current-stock-clickable">Current Stock #: <span id="current-stock-result"></span></p>
                 <button id="share-button" class="action-button" style="margin-top: 15px; width: 100%;">Copy Shareable Link</button>
             </div>
+                <div style="text-align:center; margin-top: 16px;">
+                    <button onclick="window.open('https://www.lowes.com', '_blank')" style="padding: 10px 20px; font-size: 16px; cursor: pointer;">Open Lowe's</button>
+                </div>
         </div>
     </div>
     
@@ -325,6 +328,13 @@
                         }
                         currentStockResult.textContent = currentStock || 'N/A';
                         resultBox.classList.add('visible');
+                        // Auto-scroll to Preview panel
+                        setTimeout(() => {
+                            const previewPanel = document.querySelector('.preview-wrapper');
+                            if (previewPanel) {
+                                previewPanel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            }
+                        }, 300);
                     }
                 }
             }
@@ -373,6 +383,10 @@
                     checkAndDisplayResult();
                     // Ensure progress bar updates after all dropdowns are set
                     setTimeout(updateProgressBar, 400);
+                    // Scroll to bottom so user can see the configuration and reset button
+                    setTimeout(() => {
+                        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+                    }, 700);
                 }, 450);
             }
 
@@ -389,17 +403,30 @@
 
             function copyToClipboard(text, type) {
                 if (!text || text === 'N/A') return;
-                const textArea = document.createElement("textarea");
-                textArea.value = text;
-                document.body.appendChild(textArea);
-                textArea.select();
-                document.execCommand('copy');
-                document.body.removeChild(textArea);
-                copyNotification.textContent = `${type} copied to clipboard!`;
-                copyNotification.classList.add('show');
-                setTimeout(() => {
-                    copyNotification.classList.remove('show');
-                }, 2000);
+                if (navigator.clipboard) {
+                    navigator.clipboard.writeText(text).then(() => {
+                        copyNotification.textContent = `${type} copied to clipboard!`;
+                        copyNotification.classList.add('show');
+                        setTimeout(() => {
+                            copyNotification.classList.remove('show');
+                        }, 2000);
+                    }).catch(() => {
+                        alert('Failed to copy to clipboard.');
+                    });
+                } else {
+                    // Fallback for older browsers
+                    const textArea = document.createElement("textarea");
+                    textArea.value = text;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    copyNotification.textContent = `${type} copied to clipboard!`;
+                    copyNotification.classList.add('show');
+                    setTimeout(() => {
+                        copyNotification.classList.remove('show');
+                    }, 2000);
+                }
             }
 
             function loadConfigFromURL() {
@@ -411,9 +438,13 @@
                 let filteredData = csvData;
                 for (let i = 0; i < filterColumns.length; i++) {
                     const header = filterColumns[i];
-                    const value = params.get(header);
+                    let value = params.get(header);
                     updateDropdown(i, filteredData, false);
                     const select = document.getElementById(`select-${i}`);
+                    // Special handling for Glass: empty string in URL means 'No Glass' in dropdown
+                    if (header === 'Glass' && (value === '' || value === null)) {
+                        value = 'No Glass';
+                    }
                     if (value && Array.from(select.options).some(opt => opt.value === value)) {
                         select.value = value;
                         const selections = getSelections(i);
