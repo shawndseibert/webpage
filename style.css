@@ -1,3 +1,10 @@
+/* Ensure options container stretches to panel edge */
+#options-container {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0;
+    margin: 0;
+}
 /* --- CSS Variables for Theming --- */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
 
@@ -114,8 +121,10 @@ h1 {
 }
 
 /* --- Form Element Styling --- */
-.option-group { 
-    margin-bottom: 20px; 
+.option-group {
+    margin-bottom: 20px;
+    width: 100%;
+    box-sizing: border-box;
     transition: opacity 0.4s ease-out, transform 0.4s ease-out, max-height 0.4s ease-in-out;
     transform-origin: top;
     max-height: 150px;
@@ -142,6 +151,9 @@ label {
 
 select {
     width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
     padding: 12px;
     border-radius: 6px;
     border: 1px solid var(--border-color);

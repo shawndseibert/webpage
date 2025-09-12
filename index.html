@@ -181,19 +181,47 @@
             
             function handleOptionChange(event) {
                 const changedSelect = event.target;
-                const changedLevel = parseInt(changedSelect.dataset.level);
                 resultBox.classList.remove('visible');
-                let selections = getSelections(changedLevel);
-                for (let i = changedLevel + 1; i < filterColumns.length; i++) {
-                    const filteredData = csvData.filter(row => Object.keys(selections).every(key => row[key] === selections[key]));
-                    updateDropdown(i, filteredData, false);
-                    selections = getSelections(i);
+                // Track the order in which selections are made
+                if (!window.selectionOrder) window.selectionOrder = [];
+                const selectId = changedSelect.id;
+                if (!window.selectionOrder.includes(selectId)) {
+                    window.selectionOrder.push(selectId);
+                }
+                // Remove any later selections if user changes an earlier one
+                const changedIndex = window.selectionOrder.indexOf(selectId);
+                window.selectionOrder = window.selectionOrder.slice(0, changedIndex + 1);
+
+                // Build selections in the order picked
+                const orderedSelections = {};
+                window.selectionOrder.forEach(id => {
+                    const select = document.getElementById(id);
+                    if (!select.disabled && select.value && !select.options[select.selectedIndex].disabled) {
+                        if (select.dataset.header === 'Glass' && select.value === 'No Glass') {
+                            orderedSelections[select.dataset.header] = '';
+                        } else {
+                            orderedSelections[select.dataset.header] = select.value;
+                        }
+                    }
+                });
+
+                // Filter data strictly in order of selection
+                let filteredData = csvData;
+                Object.keys(orderedSelections).forEach(key => {
+                    filteredData = filteredData.filter(row => row[key] === orderedSelections[key]);
+                });
+
+                // Update dropdowns for all columns after the last picked
+                for (let i = 0; i < filterColumns.length; i++) {
+                    // Only update dropdowns that haven't been picked yet
+                    const select = document.getElementById(`select-${i}`);
+                    if (!window.selectionOrder.includes(select.id)) {
+                        updateDropdown(i, filteredData, false);
+                    }
                 }
                 updateValidationStyles();
                 checkAndDisplayResult();
-                // Update progress bar immediately for less lag
                 updateProgressBar();
-                // Smooth scroll to next option needing selection
                 setTimeout(() => {
                     const nextGroup = Array.from(document.querySelectorAll('.option-group')).find(group => {
                         const select = group.querySelector('select');
@@ -202,7 +230,6 @@
                     if (nextGroup) {
                         nextGroup.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     }
-                    // Recalculate progress bar height after dropdown transition
                     setTimeout(updateProgressBar, 400);
                 }, 200);
             }
