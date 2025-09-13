@@ -40,6 +40,11 @@ body {
     line-height: 1.6;
     padding: 20px;
     transition: background-color 0.3s, color 0.3s;
+    user-select: none;
+}
+
+input, textarea, select {
+    user-select: text;
 }
 
 #confetti-canvas {
@@ -189,8 +194,21 @@ body.light-mode select:disabled {
 }
 
 select.needs-attention {
-    border-color: var(--accent-danger);
-    box-shadow: 0 0 0 2px rgba(200, 35, 51, 0.3);
+    border: 2px solid #FFD600 !important; /* Yellow border */
+    box-shadow: 0 0 4px 1px #FFD600;
+    animation: pulse-yellow 2s infinite;
+}
+
+@keyframes pulse-yellow {
+    0% {
+        box-shadow: 0 0 4px 1px #FFD600;
+    }
+    50% {
+        box-shadow: 0 0 8px 2px #FFD600;
+    }
+    100% {
+        box-shadow: 0 0 4px 1px #FFD600;
+    }
 }
 
 select.is-valid {
@@ -448,10 +466,12 @@ input:checked + .slider .knob {
     fill: none;
 }
 .option-group.is-valid .checkmark {
+    animation: draw-checkmark 0.3s ease-in-out forwards;
     opacity: 1;
 }
 .option-group.is-valid .checkmark path {
     animation: draw-checkmark 0.3s ease-in-out forwards;
+    stroke-dashoffset: 0;
 }
 @keyframes draw-checkmark {
     to {
@@ -459,23 +479,22 @@ input:checked + .slider .knob {
     }
 }
 
-
 /* --- Mobile Responsiveness --- */
 @media (max-width: 800px) {
-    .container { 
-        grid-template-columns: 1fr; 
+    .container {
+        grid-template-columns: 1fr;
+        padding: 10px;
     }
-    body { 
-        padding: 10px; 
+    .configurator-wrapper, .preview-wrapper {
+        padding: 20px;
     }
-    .configurator-wrapper, .preview-wrapper { 
-        padding: 20px; 
+    h1 {
+        font-size: 1.8rem;
+        max-height: 50px;
     }
-    h1 { 
-        font-size: 1.8rem; 
-    }
-    .logo-container img { 
-        max-height: 50px; 
+    .logo-container img {
+        max-height: 50px;
+        position: static;
     }
     .preview-wrapper {
         position: static;
@@ -484,12 +503,4 @@ input:checked + .slider .knob {
         flex-direction: column;
         gap: 15px;
     }
-}
-
-.result-box .item-number.copied-inline,
-.result-box #share-button.copied-inline {
-    background-color: var(--accent-success) !important;
-    color: #fff !important;
-    border-radius: 4px;
-    transition: background-color 0.2s, color 0.2s;
 }

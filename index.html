@@ -335,8 +335,8 @@
                         // Green for valid
                         select.classList.add('is-valid');
                         group.classList.add('is-valid');
-                    } else if (select.selectedIndex > 0) {
-                        // Red for needs attention (was previously selected but now invalid)
+                    } else if (!select.disabled) {
+                        // Yellow for needs attention (enabled but not selected)
                         select.classList.add('needs-attention');
                     }
                     // White is default, no class needed
@@ -370,6 +370,13 @@
                             const previewPanel = document.querySelector('.preview-wrapper');
                             if (previewPanel) {
                                 previewPanel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            }
+                            // Ensure reset button is visible on desktop
+                            if (window.innerWidth > 800) {
+                                const configurator = document.querySelector('.configurator-wrapper');
+                                if (configurator) {
+                                    configurator.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                                }
                             }
                         }, 300);
                     }
