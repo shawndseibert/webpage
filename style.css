@@ -193,22 +193,10 @@ body.light-mode select:disabled {
     background-color: #e9ecef;
 }
 
-select.needs-attention {
-    border: 2px solid #FFD600 !important; /* Yellow border */
-    box-shadow: 0 0 4px 1px #FFD600;
-    animation: pulse-yellow 2s infinite;
-}
-
-@keyframes pulse-yellow {
-    0% {
-        box-shadow: 0 0 4px 1px #FFD600;
-    }
-    50% {
-        box-shadow: 0 0 8px 2px #FFD600;
-    }
-    100% {
-        box-shadow: 0 0 4px 1px #FFD600;
-    }
+/* Subtle yellow glow for needs-attention */
+select.needs-attention, .option-group.needs-attention {
+    box-shadow: 0 0 10px 3px rgba(255, 221, 51, 0.35); /* moderately visible yellow glow */
+    border-color: #ffe066;
 }
 
 select.is-valid {

@@ -73,12 +73,7 @@
             const progressBar = document.getElementById('progress-bar');
 
             let csvData = [];
-            
-            const filterColumns = [
-                'Program', 'Glass', 'Material', 'Core_Type', 'Style', 'Configuration', 'Finish_Texture',
-                'Size_Width_in', 'Size_Height_in', 'Bore_Status', 'Handing', 'Jamb_Type',
-                'Jamb_Casing', 'Hinge_Finish', 'Special_Features'
-            ];
+            let filterColumns = [];
 
             themeSlider.addEventListener('change', () => {
                 if (themeSlider.checked) {
@@ -96,13 +91,20 @@
                 themeSlider.checked = true;
             }
 
-            Papa.parse('CSV-Sheets/doors_final_with_descriptions.csv', {
+            Papa.parse('CSV-Sheets/test.csv', {
                 download: true,
                 header: true,
                 skipEmptyLines: true,
                 transformHeader: header => header.trim(),
                 complete: function(results) {
                     csvData = results.data;
+                    // Dynamically determine filterColumns from CSV header
+                    const allHeaders = results.meta.fields;
+                    filterColumns = allHeaders.filter(h =>
+                        !h.endsWith('_Item_Number') &&
+                        h !== 'Original_Description' &&
+                        h !== "Door_Type" // Optionally exclude other non-filter columns
+                    );
                     initialize();
                 }
             });
@@ -254,7 +256,6 @@
 
                 let uniqueOptions;
                 if (header === 'Glass') {
-                    // Only show glass options that exist for the current filtered data
                     uniqueOptions = [...new Set(data.map(row => row['Glass'] && row['Glass'].trim() !== '' ? row['Glass'] : 'No Glass'))];
                 } else {
                     uniqueOptions = [...new Set(data.map(row => row[header]).filter(val => val && val.trim() !== ''))];
@@ -285,13 +286,21 @@
                 } else {
                     select.disabled = false;
                     group.classList.remove('hidden');
-                    // For Glass dropdown, auto-select 'No Glass' if it's the only valid option for this data
-                    if (header === 'Glass' && uniqueOptions.includes('No Glass') && uniqueOptions.length === 1) {
-                        select.value = 'No Glass';
+                    // Only auto-select if all previous dropdowns are selected and this dropdown has only one option
+                    let allPreviousSelected = true;
+                    for (let i = 0; i < level; i++) {
+                        const prevSelect = document.getElementById(`select-${i}`);
+                        if (!prevSelect || prevSelect.selectedIndex <= 0 || prevSelect.disabled) {
+                            allPreviousSelected = false;
+                            break;
+                        }
+                    }
+                    if (uniqueOptions.length === 1 && allPreviousSelected) {
+                        select.value = uniqueOptions[0];
                         select.classList.add('is-valid');
                         group.classList.add('is-valid');
-                    } else if (uniqueOptions.length === 1) {
-                        select.selectedIndex = 1;
+                    } else if (header === 'Glass' && uniqueOptions.includes('No Glass') && uniqueOptions.length === 1) {
+                        select.value = 'No Glass';
                         select.classList.add('is-valid');
                         group.classList.add('is-valid');
                     } else if (uniqueOptions.includes(oldValue) && !forceReset) {
@@ -547,8 +556,6 @@
     </script>
 </body>
 </html>
-
-    </script>
 </body>
 </html>
 </html>
