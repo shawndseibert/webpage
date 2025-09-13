@@ -53,9 +53,6 @@
                 <p class="item-number" id="current-stock-clickable">Current Stock #: <span id="current-stock-result"></span></p>
                 <button id="share-button" class="action-button" style="margin-top: 15px; width: 100%;">Copy Shareable Link</button>
             </div>
-                <div style="text-align:center; margin-top: 16px;">
-                    <button onclick="window.open('https://www.lowes.com', '_blank')" style="padding: 10px 20px; font-size: 16px; cursor: pointer;">Open Lowe's</button>
-                </div>
         </div>
     </div>
 
@@ -136,8 +133,20 @@
                 resetButton.addEventListener('click', resetAll);
                 randomizeButton.addEventListener('click', selectRandomConfiguration);
                 shareButton.addEventListener('click', copyShareLink);
-                proStockClickable.addEventListener('click', () => copyToClipboard(proStockResult.textContent, "Pro Stock #"));
-                currentStockClickable.addEventListener('click', () => copyToClipboard(currentStockResult.textContent, "Current Stock #"));
+                proStockClickable.addEventListener('click', () => {
+                    const itemNumber = proStockResult.textContent;
+                    copyToClipboard(itemNumber, "Pro Stock #");
+                    if (itemNumber && itemNumber !== 'N/A') {
+                        window.open(`https://www.lowes.com/search?searchTerm=${encodeURIComponent(itemNumber)}`, '_blank');
+                    }
+                });
+                currentStockClickable.addEventListener('click', () => {
+                    const itemNumber = currentStockResult.textContent;
+                    copyToClipboard(itemNumber, "Current Stock #");
+                    if (itemNumber && itemNumber !== 'N/A') {
+                        window.open(`https://www.lowes.com/search?searchTerm=${encodeURIComponent(itemNumber)}`, '_blank');
+                    }
+                });
                 
                 // MutationObserver for options container
                 const observer = new MutationObserver(() => {
@@ -345,7 +354,7 @@
                         itemDescResult.innerHTML = `<strong>${title}</strong><br>${foundRow["Original_Description"] || 'N/A'}`;
                         proStockResult.textContent = foundRow["Lowe's_Pro_Stock_Item_Number"] || 'N/A';
                         let currentStock = foundRow["Current_Stock_Item_Number"];
-                        if (currentStock && typeof currentStock === 'string' && currentStock.endsWith('.0')) {
+                        if (currentStock && currentStock.endsWith('.0')) {
                             currentStock = currentStock.slice(0, -2);
                         } else if (typeof currentStock === 'number') {
                             currentStock = currentStock % 1 === 0 ? currentStock.toString().replace(/\.0$/, '') : currentStock.toString();
@@ -431,39 +440,48 @@
                     navigator.clipboard.writeText(text).then(() => {
                         showInlineCopyFeedback(type);
                     }).catch(() => {
-                        alert('Failed to copy to clipboard.');
+                        showInlineCopyFeedback(type, true);
                     });
                 } else {
                     // Fallback for older browsers
-                    const textArea = document.createElement("textarea");
-                    textArea.value = text;
-                    document.body.appendChild(textArea);
-                    textArea.select();
-                    document.execCommand('copy');
-                    document.body.removeChild(textArea);
-                    showInlineCopyFeedback(type);
+                    try {
+                        const textArea = document.createElement("textarea");
+                        textArea.value = text;
+                        document.body.appendChild(textArea);
+                        textArea.select();
+                        const success = document.execCommand('copy');
+                        document.body.removeChild(textArea);
+                        if (success) {
+                            showInlineCopyFeedback(type);
+                        } else {
+                            showInlineCopyFeedback(type, true);
+                        }
+                    } catch {
+                        showInlineCopyFeedback(type, true);
+                    }
                 }
             }
 
-            function showInlineCopyFeedback(type) {
+            function showInlineCopyFeedback(type, failed = false) {
                 let target, span, originalText;
+                const msg = failed ? "Copy failed" : "Copied to clipboard!";
                 if (type === "Pro Stock #") {
                     target = proStockClickable;
                     span = document.getElementById('pro-stock-result');
                     originalText = span.textContent;
                     target.classList.add('copied-inline');
-                    target.innerHTML = `<span style="font-weight:bold;">Copied to clipboard!</span>`;
+                    target.innerHTML = `<span style="font-weight:bold;">${msg}</span>`;
                 } else if (type === "Current Stock #") {
                     target = currentStockClickable;
                     span = document.getElementById('current-stock-result');
                     originalText = span.textContent;
                     target.classList.add('copied-inline');
-                    target.innerHTML = `<span style="font-weight:bold;">Copied to clipboard!</span>`;
+                    target.innerHTML = `<span style="font-weight:bold;">${msg}</span>`;
                 } else if (type === "Shareable link") {
                     target = document.getElementById('share-button');
                     originalText = target.textContent;
                     target.classList.add('copied-inline');
-                    target.textContent = "Copied to clipboard!";
+                    target.textContent = msg;
                 }
                 setTimeout(() => {
                     if (type === "Pro Stock #") {
@@ -514,7 +532,12 @@
                     canvas.height = window.innerHeight;
                 }
             });
-        });
+        }); // <-- End of DOMContentLoaded handler
     </script>
 </body>
+</html>
+
+    </script>
+</body>
+</html>
 </html>

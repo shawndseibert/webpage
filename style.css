@@ -486,8 +486,8 @@ input:checked + .slider .knob {
     }
 }
 
-.item-number.copied-inline,
-#share-button.copied-inline {
+.result-box .item-number.copied-inline,
+.result-box #share-button.copied-inline {
     background-color: var(--accent-success) !important;
     color: #fff !important;
     border-radius: 4px;
