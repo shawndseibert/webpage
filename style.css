@@ -379,24 +379,24 @@ input:checked + .slider .knob {
     transform: translateX(28px);
 }
 
-/* --- Copy Notification Message --- */
-#copy-notification {
-    position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    background-color: var(--accent-success);
-    color: white;
-    padding: 10px 20px;
-    border-radius: 6px;
-    z-index: 1000;
+/* --- Inline Copied Feedback --- */
+.copied-feedback {
+    display: inline-block;
+    margin-left: 8px;
+    color: var(--accent-success);
+    font-size: 0.95em;
+    font-weight: 600;
     opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.3s, visibility 0.3s;
+    animation: fadeCopied 1.2s ease-in-out;
+    pointer-events: none;
+    vertical-align: middle;
 }
-#copy-notification.show {
-    opacity: 1;
-    visibility: visible;
+
+@keyframes fadeCopied {
+    0% { opacity: 0; }
+    10% { opacity: 1; }
+    80% { opacity: 1; }
+    100% { opacity: 0; }
 }
 
 /* --- Progress Bar --- */
@@ -483,4 +483,12 @@ input:checked + .slider .knob {
         flex-direction: column;
         gap: 15px;
     }
+}
+
+.item-number.copied-inline,
+#share-button.copied-inline {
+    background-color: var(--accent-success) !important;
+    color: #fff !important;
+    border-radius: 4px;
+    transition: background-color 0.2s, color 0.2s;
 }

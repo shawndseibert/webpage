@@ -58,8 +58,6 @@
                 </div>
         </div>
     </div>
-    
-    <div id="copy-notification">Copied to clipboard!</div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
@@ -73,7 +71,6 @@
             const themeSlider = document.getElementById('theme-slider');
             const randomizeButton = document.getElementById('randomize-button');
             const shareButton = document.getElementById('share-button');
-            const copyNotification = document.getElementById('copy-notification');
             const proStockClickable = document.getElementById('pro-stock-clickable');
             const currentStockClickable = document.getElementById('current-stock-clickable');
             const progressBar = document.getElementById('progress-bar');
@@ -432,11 +429,7 @@
                 if (!text || text === 'N/A') return;
                 if (navigator.clipboard) {
                     navigator.clipboard.writeText(text).then(() => {
-                        copyNotification.textContent = `${type} copied to clipboard!`;
-                        copyNotification.classList.add('show');
-                        setTimeout(() => {
-                            copyNotification.classList.remove('show');
-                        }, 2000);
+                        showInlineCopyFeedback(type);
                     }).catch(() => {
                         alert('Failed to copy to clipboard.');
                     });
@@ -448,12 +441,42 @@
                     textArea.select();
                     document.execCommand('copy');
                     document.body.removeChild(textArea);
-                    copyNotification.textContent = `${type} copied to clipboard!`;
-                    copyNotification.classList.add('show');
-                    setTimeout(() => {
-                        copyNotification.classList.remove('show');
-                    }, 2000);
+                    showInlineCopyFeedback(type);
                 }
+            }
+
+            function showInlineCopyFeedback(type) {
+                let target, span, originalText;
+                if (type === "Pro Stock #") {
+                    target = proStockClickable;
+                    span = document.getElementById('pro-stock-result');
+                    originalText = span.textContent;
+                    target.classList.add('copied-inline');
+                    target.innerHTML = `<span style="font-weight:bold;">Copied to clipboard!</span>`;
+                } else if (type === "Current Stock #") {
+                    target = currentStockClickable;
+                    span = document.getElementById('current-stock-result');
+                    originalText = span.textContent;
+                    target.classList.add('copied-inline');
+                    target.innerHTML = `<span style="font-weight:bold;">Copied to clipboard!</span>`;
+                } else if (type === "Shareable link") {
+                    target = document.getElementById('share-button');
+                    originalText = target.textContent;
+                    target.classList.add('copied-inline');
+                    target.textContent = "Copied to clipboard!";
+                }
+                setTimeout(() => {
+                    if (type === "Pro Stock #") {
+                        target.classList.remove('copied-inline');
+                        target.innerHTML = `Pro Stock #: <span id="pro-stock-result">${originalText}</span>`;
+                    } else if (type === "Current Stock #") {
+                        target.classList.remove('copied-inline');
+                        target.innerHTML = `Current Stock #: <span id="current-stock-result">${originalText}</span>`;
+                    } else if (type === "Shareable link") {
+                        target.classList.remove('copied-inline');
+                        target.textContent = "Copy Shareable Link";
+                    }
+                }, 1400);
             }
 
             function loadConfigFromURL() {
